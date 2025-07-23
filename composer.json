@@ -1,0 +1,23 @@
+{
+  "name": "paypay/paypay-php-sdk",
+  "description": "PayPay's PHP SDK for Checkout REST APIs",
+  "keywords": ["payppay", "payments", "rest", "sdk", "checkout"],
+  "type": "library",
+  "license": "MIT",
+  "homepage": "https://portal.paypayafrica.com/passport/apidoc/guide",
+  "require": {
+    "ext-curl": "*",
+    "ext-openssl": "*",
+    "ext-json": "*"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "psr-4": {
+      "PayPayCheckoutSdk\\": "lib/PayPayCheckoutSdk"
+    }
+  },
+  "scripts": {
+    "demo": "php -S 0.0.0.0:8080 demo/application.php"
+  }
+}

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        table td {
+            border: 1px solid #999;
+            border-collapse: collapse;
+        }
+        #modal {
+            width: 500px;
+            height: 600px;
+            border: 2px solid red;
+            background-color: #fff;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            margin: -250px auto auto -300px;
+            display: none;
+        }
+    </style>
+</head>
+<body onload="getData()">
+<div>
+    <button type="button" onclick="create()">Create Order</button>
+    <button type="button" onclick="getData()">Refresh</button>
+    <button type="button" onclick="paymentToCard()">Payment To Card</button>
+</div>
+<div style="flex: 1">
+    <div>
+        <h3>Orders</h3>
+        <div id="orders"></div>
+    </div>
+    <div>
+        <h3>Refund</h3>
+        <div id="refunds"></div>
+    </div>
+    <div>
+        <h3>Payment Card</h3>
+        <div id="cards"></div>
+    </div>
+</div>
+<script type="text/javascript">
+    function parseOrderList(orders) {
+        let html = "<table><tbody>"
+        html += "<tr><th>ID</th><th>Amount</th><th>Status</th><th>Time</th><th>Action</th></tr>"
+        orders.forEach((v) => {
+            let but = "";
+            if ("Init" === v['status']) {
+                but = "<a href='javascript:0;' onclick='closeOrder(\"" + v['orderId'] + "\")'>Close</a>"
+            } else if ("Paid" === v['status']) {
+                but = "<a href='javascript:0;' onclick='refundOrder(\"" + v['orderId'] + "\")'>Refund</a>"
+            }
+            but += " | <a href='javascript:0;' onclick='orderDetail(\"" + v['orderId'] + "\")'>Detail</a>"
+            html += `<tr><td>${v['orderId']}</td><td>${v['amount']}</td><td>${v['status']}</td><td>${v['createTime']}</td><td>${but}</td></tr>`
+
+        })
+        html += "</tbody></table>"
+        document.getElementById("orders").innerHTML = html;
+    }
+
+    function parseRefundList(list) {
+        let html = "<table><tbody>"
+        html += "<tr><th>ID</th><th>Amount</th><th>Status</th><th>orderId</th></tr>"
+        list.forEach((v) => {
+            html += `<tr><td>${v['refundId']}</td><td>${v['amount']}</td><td>${v['status']}</td><td>${v['orderId']}</td></tr>`
+
+        })
+        html += "</tbody></table>"
+        document.getElementById("refunds").innerHTML = html;
+    }
+
+    function parseCardList(list) {
+        let html = "<table><tbody>"
+        html += "<tr><th>ID</th><th>Amount</th><th>Status</th><th>iban</th></tr>"
+        list.forEach((v) => {
+            html += `<tr><td>${v['paymentId']}</td><td>${v['amount']}</td><td>${v['status']}</td><td>${v['iban']}</td></tr>`
+
+        })
+        html += "</tbody></table>"
+        document.getElementById("cards").innerHTML = html;
+    }
+
+    function getData() {
+        fetch("/list").then(res => res.json())
+            .then(data => {
+                parseOrderList(data['order']);
+                parseRefundList(data['refund']);
+                parseCardList(data['card']);
+            })
+    }
+
+    function create() {
+        if (confirm("create order")) {
+            fetch("/create").then(res => res.text())
+                .then(v => {
+                    if (v.startsWith("http")) {
+                        let codeUrl = "https://api.qrserver.com/v1/create-qr-code/?data=" + v
+                        showModal("<img alt='code' src='" + codeUrl + "' />")
+                        getData()
+                    } else {
+                        showModal(v)
+                    }
+                })
+        }
+    }
+
+    function showModal(content) {
+        document.getElementById("modalContent").innerHTML = content;
+        document.getElementById("modal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("modalContent").innerHTML = "";
+        document.getElementById("modal").style.display = "none";
+    }
+
+    function closeOrder(id) {
+        if (confirm("close order: " + id)) {
+            fetch("/close?id=" + id).then(res => res.text())
+                .then(_ => {
+                    setTimeout(() => getData(), 5000);
+                })
+        }
+    }
+
+    function refundOrder(id) {
+        if (confirm("refund order: " + id)) {
+            fetch("/refund?id=" + id).then(res => res.text())
+                .then(_ => {
+                    setTimeout(() => getData(), 5000);
+                })
+        }
+    }
+
+    function orderDetail(id) {
+        fetch("/fetch?id=" + id).then(res => res.text())
+            .then(v => {
+                showModal("<div style='word-break: break-all'>" + v + "</div>")
+            })
+    }
+
+    function paymentToCard() {
+        if (confirm("payment to card")) {
+            fetch("/card").then(res => res.text())
+                .then(v => {
+                    getData()
+                })
+        }
+    }
+</script>
+<div id="modal">
+    <button type="button" onclick="closeModal()">close</button>
+    <div id="modalContent"></div>
+</div>
+</body>
+</html>
